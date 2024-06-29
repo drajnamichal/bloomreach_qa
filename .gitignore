@@ -1,0 +1,12 @@
+# Ignore environment directories
+myenv/
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+
+# Ignore test cache
+.pytest_cache/
+
+# Ignore any other files you don't want to track
+*.log

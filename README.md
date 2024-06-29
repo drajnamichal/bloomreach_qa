@@ -42,12 +42,12 @@ Define at least 3 additional test scenarios (implementation not required).
 
 ## Configuration
 
-The following variables in the script need to be configured:
+Create a `.env` file in the project directory and add the following variables:
 
-- `api_url`
-- `api_key_id`
-- `api_key_secret`
-- `customer_id`
+- `API_URL`
+- `API_KEY_ID`
+- `API_KEY_SECRET`
+- `CUSTOMER_ID`
 
 ## Running the Tests
 

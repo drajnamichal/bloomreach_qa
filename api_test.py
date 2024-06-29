@@ -1,18 +1,25 @@
+import os
 import base64
 import requests
 import pytest
 import time
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 
-api_url = "https://gqa.api.gdev.exponea.com/data/v2/projects/6f521150-d92d-11ed-a284-de49e5a76b0b/customers/export-one"
-api_key_id = "fbiiqlwwf5gnnuxns77fkxfkoysnl6f0nhf21xixykxxsiia9c341x4ewr4w30nb"
-api_key_secret = "fypwdlyoi2sou87lvmtl80nmf68y6hxfngigssul62ojsf2qxmneiag3xo4wnpfg"
-customer_id = "customer735290"
+# Load environment variables from a .env file
+load_dotenv()
 
-auth_header = f"Basic {base64.b64encode(f'{api_key_id}:{api_key_secret}'.encode()).decode()}"
+API_URL = os.getenv("API_URL")
+API_KEY_ID = os.getenv("API_KEY_ID")
+API_KEY_SECRET = os.getenv("API_KEY_SECRET")
+CUSTOMER_ID = os.getenv("CUSTOMER_ID")
+
+auth_header = f"Basic {base64.b64encode(f'{API_KEY_ID}:{API_KEY_SECRET}'.encode()).decode()}"
 
 def fetch_csrf_token_and_cookies(survey_link):
     response = requests.get(survey_link)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch survey link: {response.status_code}")
     soup = BeautifulSoup(response.content, 'html.parser')
     csrf_token = soup.find('input', {'name': 'csrf_token'})['value']
     session_cookie = response.cookies.get('session')
@@ -25,10 +32,11 @@ def get_survey_link():
         "Content-Type": "application/json"
     }
     payload = {
-        "customer_ids": {"registered": customer_id},
+        "customer_ids": {"registered": CUSTOMER_ID},
         "properties": ["survey link"]
     }
-    response = requests.post(api_url, json=payload, headers=headers)
+    response = requests.post(API_URL, json=payload, headers=headers)
+    response.raise_for_status()
     return response.json().get('properties', {}).get('survey link')
 
 def submit_survey(survey_link, answers, csrf_token, session_cookie):
@@ -41,7 +49,10 @@ def submit_survey(survey_link, answers, csrf_token, session_cookie):
     }
     answers['csrf_token'] = csrf_token
     response = requests.post(survey_link, headers=headers, data=answers, cookies=cookies)
-    return {"status": "success", "response": response.text} if response.status_code == 200 else {"status": "failed", "response": response.text}
+    if response.status_code == 200:
+        return {"status": "success", "response": response.text}
+    else:
+        return {"status": "failed", "response": response.text}
 
 def fetch_tracked_events():
     headers = {
@@ -50,11 +61,11 @@ def fetch_tracked_events():
         "Content-Type": "application/json"
     }
     payload = {
-        "customer_ids": {"registered": customer_id}
+        "customer_ids": {"registered": CUSTOMER_ID}
     }
-    response = requests.post(api_url, json=payload, headers=headers)
-    events = response.json().get('events', [])
-    return events
+    response = requests.post(API_URL, json=payload, headers=headers)
+    response.raise_for_status()
+    return response.json().get('events', [])
 
 def wait_for_events(initial_count, expected_count, timeout=30, poll_interval=5):
     start_time = time.time()
@@ -159,5 +170,5 @@ def test_missing_required_field(survey_setup, initial_event_count):
 #    - Expected outcome: The survey should be submitted successfully, and the events should accurately reflect the selected genres.
 
 # 3. Text Field Input Variations:
-#    - Scenario: Submit the survey with various types of input for the favorite movie question, including very long titles, titles with special characters or potential script injections
-#    - Expected outcome: The survey should handle all input types correctly
+#    - Scenario: Submit the survey with various types of input for the favorite movie question, including very long titles, titles with special characters or potential script injections.
+#    - Expected outcome: The survey should handle all input types correctly.
