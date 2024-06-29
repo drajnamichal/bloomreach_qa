@@ -89,10 +89,6 @@ pytest test_survey_api.py::test_happy_path_full_response
 2. Analyze the survey submission request in a browser to simulate it in the test.
 3. Use the Customer Export Endpoint to verify event tracking after survey submission.
 
-## Note
-
-This test suite interacts with a live API. Ensure you have the necessary permissions and are aware of any rate limiting or data manipulation consequences.
-
 ## Documentation
 
 For more details on the Customer Export Endpoint, refer to:
