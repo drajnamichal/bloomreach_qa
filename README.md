@@ -34,8 +34,8 @@ Define at least 3 additional test scenarios (implementation not required).
 
 1. Clone this repository:
    ```
-   git clone <repository-url>
-   cd <repository-directory>
+   git clone https://github.com/drajnamichal/bloomreach_qa.git
+   cd bloomreach_qa
    ```
 
 2. Install the required packages
@@ -69,7 +69,7 @@ pytest test_survey_api.py::test_happy_path_full_response
 2. `test_happy_path_minimum_response`: Tests a survey submission with only the required questions answered.
 3. `test_missing_required_field`: Tests the API's response when a required field is missing.
 
-## Additional Test Scenarios (Defined, Not Implemented)
+## Additional Test Scenarios (Defined, not implemented)
 
 1. Error handling for invalid CSRF token
 2. Multiple selection for music genres

@@ -4,13 +4,11 @@ import pytest
 import time
 from bs4 import BeautifulSoup
 
-# API URL and credentials
 api_url = "https://gqa.api.gdev.exponea.com/data/v2/projects/6f521150-d92d-11ed-a284-de49e5a76b0b/customers/export-one"
 api_key_id = "fbiiqlwwf5gnnuxns77fkxfkoysnl6f0nhf21xixykxxsiia9c341x4ewr4w30nb"
 api_key_secret = "fypwdlyoi2sou87lvmtl80nmf68y6hxfngigssul62ojsf2qxmneiag3xo4wnpfg"
 customer_id = "customer735290"
 
-# Encode credentials
 auth_header = f"Basic {base64.b64encode(f'{api_key_id}:{api_key_secret}'.encode()).decode()}"
 
 def fetch_csrf_token_and_cookies(survey_link):
@@ -161,6 +159,5 @@ def test_missing_required_field(survey_setup, initial_event_count):
 #    - Expected outcome: The survey should be submitted successfully, and the events should accurately reflect the selected genres.
 
 # 3. Text Field Input Variations:
-#    - Scenario: Submit the survey with various types of input for the favorite movie question, including very long titles, titles with special characters 
-#                or potential script injections
+#    - Scenario: Submit the survey with various types of input for the favorite movie question, including very long titles, titles with special characters or potential script injections
 #    - Expected outcome: The survey should handle all input types correctly
