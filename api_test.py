@@ -9,14 +9,20 @@ from dotenv import load_dotenv
 # Load environment variables from a .env file
 load_dotenv()
 
+# Constants
 API_URL = os.getenv("API_URL")
 API_KEY_ID = os.getenv("API_KEY_ID")
 API_KEY_SECRET = os.getenv("API_KEY_SECRET")
 CUSTOMER_ID = os.getenv("CUSTOMER_ID")
 
-auth_header = f"Basic {base64.b64encode(f'{API_KEY_ID}:{API_KEY_SECRET}'.encode()).decode()}"
+AUTH_HEADER = f"Basic {base64.b64encode(f'{API_KEY_ID}:{API_KEY_SECRET}'.encode()).decode()}"
+HEADERS_JSON = {
+    "accept": "application/json",
+    "authorization": AUTH_HEADER,
+    "Content-Type": "application/json"
+}
 
-def fetch_csrf_token_and_cookies(survey_link):
+def fetch_csrf_token_and_cookies(survey_link: str) -> tuple:
     response = requests.get(survey_link)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch survey link: {response.status_code}")
@@ -25,28 +31,21 @@ def fetch_csrf_token_and_cookies(survey_link):
     session_cookie = response.cookies.get('session')
     return csrf_token, session_cookie
 
-def get_survey_link():
-    headers = {
-        "accept": "application/json",
-        "authorization": auth_header,
-        "Content-Type": "application/json"
-    }
+def get_survey_link() -> str:
     payload = {
         "customer_ids": {"registered": CUSTOMER_ID},
         "properties": ["survey link"]
     }
-    response = requests.post(API_URL, json=payload, headers=headers)
+    response = requests.post(API_URL, json=payload, headers=HEADERS_JSON)
     response.raise_for_status()
     return response.json().get('properties', {}).get('survey link')
 
-def submit_survey(survey_link, answers, csrf_token, session_cookie):
+def submit_survey(survey_link: str, answers: dict, csrf_token: str, session_cookie: str) -> dict:
     headers = {
         "Referer": survey_link,
         "Content-Type": "application/x-www-form-urlencoded"
     }
-    cookies = {
-        "session": session_cookie
-    }
+    cookies = {"session": session_cookie}
     answers['csrf_token'] = csrf_token
     response = requests.post(survey_link, headers=headers, data=answers, cookies=cookies)
     if response.status_code == 200:
@@ -54,20 +53,13 @@ def submit_survey(survey_link, answers, csrf_token, session_cookie):
     else:
         return {"status": "failed", "response": response.text}
 
-def fetch_tracked_events():
-    headers = {
-        "accept": "application/json",
-        "authorization": auth_header,
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "customer_ids": {"registered": CUSTOMER_ID}
-    }
-    response = requests.post(API_URL, json=payload, headers=headers)
+def fetch_tracked_events() -> list:
+    payload = {"customer_ids": {"registered": CUSTOMER_ID}}
+    response = requests.post(API_URL, json=payload, headers=HEADERS_JSON)
     response.raise_for_status()
     return response.json().get('events', [])
 
-def wait_for_events(initial_count, expected_count, timeout=30, poll_interval=5):
+def wait_for_events(initial_count: int, expected_count: int, timeout: int = 30, poll_interval: int = 5) -> list:
     start_time = time.time()
     while time.time() - start_time < timeout:
         events = fetch_tracked_events()
@@ -77,17 +69,17 @@ def wait_for_events(initial_count, expected_count, timeout=30, poll_interval=5):
     return fetch_tracked_events()
 
 @pytest.fixture
-def survey_setup():
+def survey_setup() -> tuple:
     survey_link = get_survey_link()
     csrf_token, session_cookie = fetch_csrf_token_and_cookies(survey_link)
     return survey_link, csrf_token, session_cookie
 
 @pytest.fixture
-def initial_event_count():
+def initial_event_count() -> int:
     events = fetch_tracked_events()
     return len(events)
 
-def test_happy_path_full_response(survey_setup, initial_event_count):
+def test_happy_path_full_response(survey_setup: tuple, initial_event_count: int):
     survey_link, csrf_token, session_cookie = survey_setup
     print(f"Initial event count before test_happy_path_full_response: {initial_event_count}")
     answers = {
@@ -103,7 +95,6 @@ def test_happy_path_full_response(survey_setup, initial_event_count):
     print(f"Final event count after test_happy_path_full_response: {final_event_count}")
     assert final_event_count >= initial_event_count + 4, "Not all events were tracked"
 
-    # Assert event structure for the last 4 events
     for event in events[-4:]:
         assert event["type"] == "survey", "Event type is not 'survey'"
         assert "timestamp" in event, "Timestamp is missing"
@@ -116,7 +107,7 @@ def test_happy_path_full_response(survey_setup, initial_event_count):
         assert "survey_id" in props, "Survey ID is missing in properties"
         assert "survey_name" in props, "Survey name is missing in properties"
 
-def test_happy_path_minimum_response(survey_setup, initial_event_count):
+def test_happy_path_minimum_response(survey_setup: tuple, initial_event_count: int):
     survey_link, csrf_token, session_cookie = survey_setup
     print(f"Initial event count before test_happy_path_minimum_response: {initial_event_count}")
     answers = {
@@ -131,8 +122,7 @@ def test_happy_path_minimum_response(survey_setup, initial_event_count):
     print(f"Final event count after test_happy_path_minimum_response: {final_event_count}")
     assert final_event_count >= initial_event_count + 3, "Not all events were tracked"
 
-    # Assert event structure for the last 4 events
-    for event in events[-4:]:
+    for event in events[-3:]:
         assert event["type"] == "survey", "Event type is not 'survey'"
         assert "timestamp" in event, "Timestamp is missing"
         assert "properties" in event, "Properties are missing"
@@ -144,7 +134,7 @@ def test_happy_path_minimum_response(survey_setup, initial_event_count):
         assert "survey_id" in props, "Survey ID is missing in properties"
         assert "survey_name" in props, "Survey name is missing in properties"
 
-def test_missing_required_field(survey_setup, initial_event_count):
+def test_missing_required_field(survey_setup: tuple, initial_event_count: int):
     survey_link, csrf_token, session_cookie = survey_setup
     print(f"Initial event count before test_missing_required_field: {initial_event_count}")
     answers = {
