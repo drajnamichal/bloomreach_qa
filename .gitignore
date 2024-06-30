@@ -1,5 +1,6 @@
 # Ignore environment directories
 myenv/
+.env
 
 # Ignore Python cache files
 __pycache__/
